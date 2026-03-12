@@ -1695,15 +1695,16 @@ def _register_one(idx, total, proxy, output_file):
 
         chatgpt_password = _generate_password()
         # 随机姓名和生日函数需确保已定义，若原文件有则调用，无则简单生成
-        name = f"User {random.randint(1000,9999)}" 
-        birthdate = f"{random.randint(1985, 2002)}-{random.randint(1,12):02d}-{random.randint(1,28):02d}"
+        name = _random_name()
+        birthdate = _random_birthdate()
 
         with _print_lock:
-            print(f"\n{'='*60} ")
-            print(f"  [{idx}/{total}] 注册：{email} ")
-            # CI 环境下建议隐藏密码，或仅打印部分
-            # print(f"  ChatGPT 密码：{chatgpt_password} ") 
-            print(f"{'='*60} ")
+        print(f"\n{'='*60}")
+        print(f"  [{idx}/{total}] 注册: {email}")
+        print(f"  ChatGPT密码: {chatgpt_password}")
+        print(f"  邮箱密码: {email_pwd}")
+        print(f"  姓名: {name} | 生日: {birthdate}")
+        print(f"{'='*60}")
 
         reg.run_register(email, chatgpt_password, name, birthdate, mail_token)
 
