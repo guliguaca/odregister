@@ -44,7 +44,7 @@ jobs:
           UPLOAD_API_TOKEN: ${{ secrets.UPLOAD_API_TOKEN }}
           TOKEN_JSON_DIR: ${{ secrets.TOKEN_JSON_DIR }}
           
-        run: python chatgpt_register.py
+        run: python odregister.py
       - name: Upload Results (Optional)
         uses: actions/upload-artifact@v4  # ✅ 升级到 v4
         if: always()
