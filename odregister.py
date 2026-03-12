@@ -1699,12 +1699,12 @@ def _register_one(idx, total, proxy, output_file):
         birthdate = _random_birthdate()
 
         with _print_lock:
-        print(f"\n{'='*60}")
-        print(f"  [{idx}/{total}] 注册: {email}")
-        print(f"  ChatGPT密码: {chatgpt_password}")
-        print(f"  邮箱密码: {email_pwd}")
-        print(f"  姓名: {name} | 生日: {birthdate}")
-        print(f"{'='*60}")
+            print(f"\n{'='*60}")
+            print(f"  [{idx}/{total}] 注册: {email}")
+            print(f"  ChatGPT密码: {chatgpt_password}")
+            print(f"  邮箱密码: {email_pwd}")
+            print(f"  姓名: {name} | 生日: {birthdate}")
+            print(f"{'='*60}")
 
         reg.run_register(email, chatgpt_password, name, birthdate, mail_token)
 
