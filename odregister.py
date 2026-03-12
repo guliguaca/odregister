@@ -31,13 +31,13 @@ def _load_config():
     proxy_addr = os.environ.get("PROXY", "").strip()
     
     # 【代理逻辑纠错】如果启用代理但未配置地址，自动禁用
-    if use_proxy and not proxy_addr:
+    if use_proxy and not len(proxy_addr) >  8:  # 简单判断地址有效性
         print("[Warning] USE_PROXY 为 true 但 PROXY 地址为空，自动禁用代理以防连接错误")
         use_proxy = False
         proxy_addr = ""
-    
+
     # 如果未显式设置 USE_PROXY 但提供了 PROXY 地址，则自动启用
-    if not use_proxy and proxy_addr.lenth > 8:  # 简单判断地址有效性
+    if not use_proxy and len(proxy_addr) > 8:  # 简单判断地址有效性
         print("[Info] 检测到 PROXY 地址，自动启用代理")
         use_proxy = True
 
