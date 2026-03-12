@@ -37,7 +37,7 @@ def _load_config():
         proxy_addr = ""
     
     # 如果未显式设置 USE_PROXY 但提供了 PROXY 地址，则自动启用
-    if not use_proxy and proxy_addr:
+    if not use_proxy and proxy_addr.lenth > 8:  # 简单判断地址有效性
         print("[Info] 检测到 PROXY 地址，自动启用代理")
         use_proxy = True
 
