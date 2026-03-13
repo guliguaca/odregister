@@ -415,6 +415,7 @@ def _save_codex_tokens(email: str, tokens: dict):
             json.dump(token_data, f, ensure_ascii=False)
 
     # 上传到 CPA 管理平台
+    upload_success = False
     if UPLOAD_API_URL:
         _upload_token_json(token_path)
 
