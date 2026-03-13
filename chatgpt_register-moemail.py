@@ -1,5 +1,5 @@
 """
-ChatGPT 批量自动注册工具 (并发版) - DuckMail 临时邮箱版
+ChatGPT 批量自动注册工具 (并发版) - Moemail系 临时邮箱版
 依赖: pip install curl_cffi
 功能: 使用 DuckMail 临时邮箱，并发自动注册 ChatGPT 账号，自动获取 OTP 验证码
 """
@@ -21,54 +21,44 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs, urlencode
 
 from curl_cffi import requests as curl_requests
-MOEMAIL_API_BASE = "https://mail.eleme.uk"
-MOEMAIL_API_KEY = "mk_16hhA0ySiRi_gtr7m37WOTWc-BOHxK-S"
+
 # ================= 加载配置 =================
 def _load_config():
-    """从 config.json 加载配置，环境变量优先级更高"""
+    """仅从环境变量加载配置，不再读取 config.json"""
+    # 代理配置逻辑
+    use_proxy_str = os.environ.get("USE_PROXY", "false").strip().lower()
+    use_proxy = use_proxy_str in ("true", "1", "yes")
+    proxy_addr = os.environ.get("PROXY", "").strip()
+    
+    # 【代理逻辑纠错】如果启用代理但未配置地址，自动禁用
+    if use_proxy and not len(proxy_addr) >  8:  # 简单判断地址有效性
+        print("[Warning] USE_PROXY 为 true 但 PROXY 地址为空，自动禁用代理以防连接错误")
+        use_proxy = False
+        proxy_addr = ""
+
+    # 如果未显式设置 USE_PROXY 但提供了 PROXY 地址，则自动启用
+    if not use_proxy and len(proxy_addr) > 8:  # 简单判断地址有效性
+        print("[Info] 检测到 PROXY 地址，自动启用代理")
+        use_proxy = True
+
     config = {
-        "total_accounts": 3,
-        "duckmail_api_base": "https://api.duckmail.sbs",
-        "duckmail_bearer": "",
-        "proxy": "",
-        "output_file": "registered_accounts.txt",
-        "enable_oauth": True,
-        "oauth_required": True,
-        "oauth_issuer": "https://auth.openai.com",
-        "oauth_client_id": "app_EMoamEEZ73f0CkXaXp7hrann",
-        "oauth_redirect_uri": "http://localhost:1455/auth/callback",
-        "ak_file": "ak.txt",
-        "rk_file": "rk.txt",
-        "token_json_dir": "codex_tokens",
-        "upload_api_url": "",
-        "upload_api_token": "",
+        "total_accounts": int(os.environ.get("TOTAL_ACCOUNTS", "3")),
+        "max_workers": int(os.environ.get("MAX_WORKERS", "3")),
+        "duckmail_api_base": os.environ.get("DUCKMAIL_API_BASE", "https://api.duckmail.sbs"),
+        "duckmail_bearer": os.environ.get("DUCKMAIL_BEARER", ""),
+        "proxy": proxy_addr if use_proxy else "",
+        "output_file": os.environ.get("OUTPUT_FILE", "registered_accounts.txt"),
+        "enable_oauth": os.environ.get("ENABLE_OAUTH", "true").lower() == "true",
+        "oauth_required": os.environ.get("OAUTH_REQUIRED", "true").lower() == "true",
+        "oauth_issuer": os.environ.get("OAUTH_ISSUER", "https://auth.openai.com"),
+        "oauth_client_id": os.environ.get("OAUTH_CLIENT_ID", "app_EMoamEEZ73f0CkXaXp7hrann"),
+        "oauth_redirect_uri": os.environ.get("OAUTH_REDIRECT_URI", "http://localhost:1455/auth/callback"),
+        "ak_file": os.environ.get("AK_FILE", "ak.txt"),
+        "rk_file": os.environ.get("RK_FILE", "rk.txt"),
+        "token_json_dir": os.environ.get("TOKEN_JSON_DIR", "codex_tokens"),
+        "upload_api_url": os.environ.get("UPLOAD_API_URL", ""),
+        "upload_api_token": os.environ.get("UPLOAD_API_TOKEN", ""),
     }
-
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                file_config = json.load(f)
-                config.update(file_config)
-        except Exception as e:
-            print(f"⚠️ 加载 config.json 失败: {e}")
-
-    # 环境变量优先级更高
-    config["duckmail_api_base"] = os.environ.get("DUCKMAIL_API_BASE", config["duckmail_api_base"])
-    config["duckmail_bearer"] = os.environ.get("DUCKMAIL_BEARER", config["duckmail_bearer"])
-    config["proxy"] = os.environ.get("PROXY", config["proxy"])
-    config["total_accounts"] = int(os.environ.get("TOTAL_ACCOUNTS", config["total_accounts"]))
-    config["enable_oauth"] = os.environ.get("ENABLE_OAUTH", config["enable_oauth"])
-    config["oauth_required"] = os.environ.get("OAUTH_REQUIRED", config["oauth_required"])
-    config["oauth_issuer"] = os.environ.get("OAUTH_ISSUER", config["oauth_issuer"])
-    config["oauth_client_id"] = os.environ.get("OAUTH_CLIENT_ID", config["oauth_client_id"])
-    config["oauth_redirect_uri"] = os.environ.get("OAUTH_REDIRECT_URI", config["oauth_redirect_uri"])
-    config["ak_file"] = os.environ.get("AK_FILE", config["ak_file"])
-    config["rk_file"] = os.environ.get("RK_FILE", config["rk_file"])
-    config["token_json_dir"] = os.environ.get("TOKEN_JSON_DIR", config["token_json_dir"])
-    config["upload_api_url"] = os.environ.get("UPLOAD_API_URL", config["upload_api_url"])
-    config["upload_api_token"] = os.environ.get("UPLOAD_API_TOKEN", config["upload_api_token"])
-
     return config
 
 
@@ -82,7 +72,9 @@ def _as_bool(value):
 
 _CONFIG = _load_config()
 DUCKMAIL_API_BASE = _CONFIG["duckmail_api_base"]
+MOEMAIL_API_BASE = _CONFIG["duckmail_api_base"]
 DUCKMAIL_BEARER = _CONFIG["duckmail_bearer"]
+MOEMAIL_API_KEY = _CONFIG["duckmail_bearer"]
 DEFAULT_TOTAL_ACCOUNTS = _CONFIG["total_accounts"]
 DEFAULT_PROXY = _CONFIG["proxy"]
 DEFAULT_OUTPUT_FILE = _CONFIG["output_file"]
